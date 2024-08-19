@@ -67,13 +67,16 @@ def get_feature_target(
         y_test : pd.Series
             Test target
     """
-    X_train, y_train, X_test, y_test = None, None, None, None
 
     # TODO
     # Assign to X_train all the columns from app_train except "TARGET"
+    X_train = app_train.drop(columns=['TARGET'])
     # Assign to y_train the "TARGET" column
+    y_train = app_train['TARGET']
     # Assign to X_test all the columns from app_test except "TARGET"
+    X_test = app_test.drop(columns=['TARGET'])
     # Assign to y_test the "TARGET" column
+    y_test = app_test['TARGET']
 
 
     return X_train, y_train, X_test, y_test
