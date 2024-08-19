@@ -104,7 +104,11 @@ def get_train_val_sets(
         y_val : pd.Series
             Validation target
     """
-    X_train, X_val, y_train, y_val = None, None, None, None
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train, y_train,
+        test_size=0.2,
+        shuffle=True
+    )
 
     # TODO
     # Use the `sklearn.model_selection.train_test_split` function with

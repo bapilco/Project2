@@ -55,6 +55,27 @@ def preprocess_data(
     #     OneHotEncoder classes, then use the fitted models to transform all the
     #     datasets.
 
+    categorical_columns = working_train_df.select_dtypes(include='object').columns
+    columns_with_2_categories = [col for col in categorical_columns if working_train_df[col].nunique() == 2]
+    columns_with_more_than_2_categories = [col for col in categorical_columns if working_train_df[col].nunique() > 2]
+
+    ordinal_encoder = OrdinalEncoder()
+    working_train_df[columns_with_2_categories] = ordinal_encoder.fit_transform(working_train_df[columns_with_2_categories])
+    working_val_df[columns_with_2_categories] = ordinal_encoder.transform(working_val_df[columns_with_2_categories])
+    working_test_df[columns_with_2_categories] = ordinal_encoder.transform(working_test_df[columns_with_2_categories])
+
+    onehot_encoder = OneHotEncoder(sparse_output=False)
+    onehot_encoded_train = onehot_encoder.fit_transform(working_train_df[columns_with_more_than_2_categories])
+    onehot_encoded_val = onehot_encoder.transform(working_val_df[columns_with_more_than_2_categories])
+    onehot_encoded_test = onehot_encoder.transform(working_test_df[columns_with_more_than_2_categories])
+
+    onehot_encoded_train_df = pd.DataFrame(onehot_encoded_train, columns=onehot_encoder.get_feature_names_out(columns_with_more_than_2_categories))
+    onehot_encoded_val_df = pd.DataFrame(onehot_encoded_val, columns=onehot_encoder.get_feature_names_out(columns_with_more_than_2_categories))
+    onehot_encoded_test_df = pd.DataFrame(onehot_encoded_test, columns=onehot_encoder.get_feature_names_out(columns_with_more_than_2_categories))
+
+    working_train_df = working_train_df.drop(columns_with_more_than_2_categories, axis=1).join(onehot_encoded_train_df)
+    working_val_df = working_val_df.drop(columns_with_more_than_2_categories, axis=1).join(onehot_encoded_val_df)
+    working_test_df = working_test_df.drop(columns_with_more_than_2_categories, axis=1).join(onehot_encoded_test_df)
 
     # 3. TODO Impute values for all columns with missing data or, just all the columns.
     # Use median as imputing value. Please use sklearn.impute.SimpleImputer().
@@ -64,6 +85,13 @@ def preprocess_data(
     #   - In order to prevent overfitting and avoid Data Leakage you must use only
     #     working_train_df DataFrame to fit the SimpleImputer and then use the fitted
     #     model to transform all the datasets.
+
+    imputer = SimpleImputer(strategy='median')
+
+    imputer.fit(working_train_df)
+    working_train_df = pd.DataFrame(imputer.transform(working_train_df), columns=working_train_df.columns)
+    working_val_df = pd.DataFrame(imputer.transform(working_val_df), columns=working_val_df.columns)
+    working_test_df = pd.DataFrame(imputer.transform(working_test_df), columns=working_test_df.columns)
 
 
     # 4. TODO Feature scaling with Min-Max scaler. Apply this to all the columns.
@@ -75,5 +103,10 @@ def preprocess_data(
     #     working_train_df DataFrame to fit the MinMaxScaler and then use the fitted
     #     model to transform all the datasets.
 
+    scaler = MinMaxScaler()
+    scaler.fit(working_train_df)
+    working_train_df = pd.DataFrame(scaler.transform(working_train_df), columns=working_train_df.columns)
+    working_val_df = pd.DataFrame(scaler.transform(working_val_df), columns=working_val_df.columns)
+    working_test_df = pd.DataFrame(scaler.transform(working_test_df), columns=working_test_df.columns)
 
-    return None
+    return working_train_df.to_numpy(), working_val_df.to_numpy(), working_test_df.to_numpy()
